@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+		PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+		"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+#set($num=0)
+#set($blank="
+	")
+<mapper namespace="${packageName}.dal.mapper.${upperEntityEnName}Mapper">
+
+	<resultMap type="${upperEntityEnName}" id="BaseResultMap">
+#foreach($item in $!bo.propList)
+#if("$!{item.columnName}" == "id")
+		<id column="$!{item.columnName}" property="$!{item.enName}"/>
+#else
+		<result column="$!{item.columnName}" property="$!{item.enName}"/>
+#end
+#end
+	</resultMap>
+
+	<sql id="Base_Column_List">
+	#foreach($item in $!bo.propList)
+#if($!num % 8 == 0 && $!num != 0)$!blank#end `$!{item.columnName}`#if($foreach.hasNext),#end#set($num=$num+1)
+#end
+
+	</sql>
+
+	<sql id="Base_Table_Name">
+		${tableName}
+	</sql>
+
+	<sql id="Base_Where">
+		delState = 1
+#foreach($item in $!bo.propList)
+#if("$!{item.columnName}" != "delState")
+		<if test="$!{item.enName} != null #if("$!{item.dataType}" == "java.lang.String") and $!{item.enName} != ''#end"> and  `$!{item.columnName}` = #{$!{item.enName}} </if>
+#end
+#end
+	</sql>
+
+    <select id="findById" resultMap="BaseResultMap">
+        select <include refid="Base_Column_List"/> from <include refid="Base_Table_Name"/> WHERE id = #{id}
+    </select>
+
+    <select id="selectList" parameterType="Map" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/> from <include refid="Base_Table_Name"/>
+        <where>
+            <include refid="Base_Where"/>
+        </where>
+        order by id desc
+        <if test="pagination != null ">
+            limit #{pagination.startRow}, #{pagination.pageSize}
+        </if>
+    </select>
+
+    <select id="selectListCount" parameterType="Map" resultType="java.lang.Long">
+        SELECT count(*) from <include refid="Base_Table_Name"/>
+        <where>
+            <include refid="Base_Where"/>
+        </where>
+    </select>
+
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id" parameterType="${upperEntityEnName}">
+        <selectKey keyProperty="id" resultType="Long">
+            select LAST_INSERT_ID() as id
+        </selectKey>
+        insert into
+        <include refid="Base_Table_Name"/>
+        (
+		#foreach($item in $!bo.propList)
+#if("$!item.columnName" != "id")#if($!num % 8 == 0 && $!num != 0)$!blank	#end`$!{item.columnName}`#if($foreach.hasNext),#end#set($num=$num+1)#end
+#end
+
+		)
+		values
+		(
+		#set($num=0)#foreach($item in $!bo.propList)
+#if("$!item.columnName" != "id") #if($!num % 8 == 0 && $!num != 0)$!blank	 #end
+#if("$!item.columnName" == "delState")1#elseif("$!item.columnName" == "gmtCreate" || "$!item.columnName" == "gmtModify")now(6)#else#{$!{item.enName}}#end#if($foreach.hasNext),#end#set($num=$num+1)#end
+#end
+
+    </insert>
+
+    <update id="updateById" parameterType="${upperEntityEnName}">
+        update <include refid="Base_Table_Name"/>
+        <set>
+#foreach($item in $!bo.propList)
+#if("$!item.columnName" != "id" && "$!item.columnName" != "gmtCreate" && "$!item.columnName" != "gmtModify" )
+			<if test="$!{item.enName} != null#if("$!{item.dataType}" == "java.lang.String") and $!{item.enName} != ''#end">`$!{item.columnName}` = #{$!{item.enName}}, </if>
+#end
+#end
+        </set>
+        ,gmtModify = now(6)
+        where id = #{id}
+    </update>
+
+    <update id="deleteById" parameterType="Long">
+        update <include refid="Base_Table_Name"/> set delState = 0 where id = #{id}
+    </update>
+
+
+	<!-- user definition code start -->
+	<!-- user definition code end -->
+</mapper>

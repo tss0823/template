@@ -1,0 +1,18 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <parent>
+        <artifactId>${appEnName}</artifactId>
+        <groupId>${packageName}</groupId>
+        <version>0.0.1-SNAPSHOT</version>
+    </parent>
+
+    <modelVersion>4.0.0</modelVersion>
+    <artifactId>${appEnName}-web</artifactId>
+    <packaging>pom</packaging>
+    <name>${appEnName}-web</name>
+    <url>http://m/u01/code/zhushou-deploy/zhushou-deploy/targeten.apache.org</url>
+
+    <modules>
+        <module>member</module>
+    </modules>
+</project>
