@@ -1,6 +1,6 @@
 package ${packageName}.web.member.controller;
 
-import ${packageName}.model.constant.AppConstant;
+import ${packageName}.common.constant.AppConstant;
 import ${packageName}.service.inter.UserService;
 import com.yuntao.platform.common.CustomizedPropertyConfigurer;
 import com.yuntao.platform.common.exception.AuthException;

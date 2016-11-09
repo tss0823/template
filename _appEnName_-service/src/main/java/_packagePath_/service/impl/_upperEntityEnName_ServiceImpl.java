@@ -50,21 +50,20 @@ public class ${upperEntityEnName}ServiceImpl extends AbstService implements ${up
     public Pagination<${upperEntityEnName}Vo> selectPage(${upperEntityEnName}Query query) {
         Map<String, Object> queryMap = BeanUtils.beanToMap(query);
         long totalCount = ${entityEnName}Mapper.selectListCount(queryMap);
-        if (totalCount == 0) {
-            return null;
-        }
         Pagination<${upperEntityEnName}Vo> pagination = new Pagination<>(totalCount,
-        query.getPageSize(), query.getPageNum());
+                query.getPageSize(), query.getPageNum());
+        if (totalCount == 0) {
+            return pagination;
+        }
         queryMap.put("pagination", pagination);
         List<${upperEntityEnName}> dataList = ${entityEnName}Mapper.selectList(queryMap);
         List<${upperEntityEnName}Vo> newDataList = new ArrayList<>(dataList.size());
         pagination.setDataList(newDataList);
         for (${upperEntityEnName} ${entityEnName} : dataList) {
-        ${upperEntityEnName}Vo ${entityEnName}Vo = BeanUtils.beanCopy(${entityEnName}, ${upperEntityEnName}Vo.class);
-        newDataList.add(${entityEnName}Vo);
+            ${upperEntityEnName}Vo ${entityEnName}Vo = BeanUtils.beanCopy(${entityEnName}, ${upperEntityEnName}Vo.class);
+            newDataList.add(${entityEnName}Vo);
         }
         return pagination;
-
     }
 
     @Override

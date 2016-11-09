@@ -1,7 +1,7 @@
 package ${packageName}.service.auth;
 
 import ${packageName}.common.annotation.Auth;
-import ${packageName}.model.constant.AppConstant;
+import ${packageName}.common.constant.AppConstant;
 import ${packageName}.model.domain.User;
 import ${packageName}.service.inter.UserService;
 import com.yuntao.platform.common.annotation.NeedLogin;
