@@ -80,6 +80,7 @@
 #if("$!item.columnName" == "delState")1#elseif("$!item.columnName" == "gmtCreate" || "$!item.columnName" == "gmtModify")now(6)#else#{$!{item.enName}}#end#if($foreach.hasNext),#end#set($num=$num+1)#end
 #end
 
+		)
     </insert>
 
     <update id="updateById" parameterType="${upperEntityEnName}">
