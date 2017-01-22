@@ -7,7 +7,7 @@ import java.lang.annotation.Target;
 @Target({ElementType.ANNOTATION_TYPE, ElementType.FIELD, ElementType.METHOD, ElementType.PARAMETER,
         ElementType.TYPE})
 @java.lang.annotation.Retention(value = java.lang.annotation.RetentionPolicy.RUNTIME)
-public @interface EnumComment {
+public @interface FieldComment {
 
     String value();
 

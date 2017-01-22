@@ -28,6 +28,9 @@ public enum UserType {
     }
 
     public static UserType getByCode(int code) {
+        if (code == null) {
+            return null;
+        }
         for (UserType s : UserType.values()) {
             if (s.getCode() == code) {
                 return s;

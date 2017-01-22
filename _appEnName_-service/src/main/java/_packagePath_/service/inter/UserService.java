@@ -15,7 +15,7 @@ public interface UserService {
 
     Pagination<UserVo> selectPage(UserQuery query);
 
-    Pagination<UserVo> selectMemberPage(UserQuery query);
+    Pagination<MemberVo> selectMemberPage(UserQuery query);
 
     List<UserVo> selectList(UserQuery query);
 
@@ -27,8 +27,6 @@ public interface UserService {
 
     User getCurrentUser();
 
-    void setCurrentUser(User user);
-
     User register(User user);
 
     int updateById(User user);
@@ -37,4 +35,9 @@ public interface UserService {
 
     User selectOne(UserQuery query);
 
+    User selectByOuter(Integer type,String openId);
+
+    User saveOuterUser(Integer type,String openId,String nickname,String avatar);
+
+    void deleteById(Long id);
 }

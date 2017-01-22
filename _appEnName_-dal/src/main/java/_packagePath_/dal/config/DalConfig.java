@@ -19,7 +19,7 @@ import javax.sql.DataSource;
  */
 @Configuration
 @ImportResource("classpath:applicationContext-dal.xml")
-public class DalConfig {
+public class DalConfig implements ApplicationContextAware {
 
     @Value("classpath:mybatis-config.xml")
     Resource mybatisMapperConfig;
@@ -27,6 +27,7 @@ public class DalConfig {
     @Autowired
     DataSource dataSource;
 
+    ApplicationContext applicationContext;
 
     #foreach($entity in $!entityBoList)
     @Bean
@@ -49,6 +50,13 @@ public class DalConfig {
         fb.setConfigLocation(mybatisMapperConfig);
         fb.setDataSource(dataSource);
         fb.setTypeAliases(new Class<?>[]{IdTypeHandler.class});
+        fb.setPlugins(new Interceptor[] { new MyBatisInterceptor(this.applicationContext) });
         return fb.getObject();
+    }
+
+    @Override
+    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+        this.applicationContext = applicationContext;
+
     }
 }

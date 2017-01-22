@@ -1,17 +1,23 @@
 package ${packageName}.service.impl;
 
+import ${packageName}.common.constant.CacheConstant;
 import ${packageName}.dal.mapper.UserMapper;
+import ${packageName}.model.domain.Account;
+import ${packageName}.model.domain.OuterUser;
 import ${packageName}.model.domain.User;
 import ${packageName}.model.enums.*;
+import ${packageName}.model.query.OuterUserQuery;
 import ${packageName}.model.query.UserQuery;
+import ${packageName}.model.vo.MemberVo;
 import ${packageName}.model.vo.UserVo;
+import ${packageName}.service.inter.AccountService;
+import ${packageName}.service.inter.OuterUserService;
 import ${packageName}.service.inter.UserService;
+import com.yuntao.platform.common.auth.AuthUser;
+import com.yuntao.platform.common.auth.AuthUserService;
 import com.yuntao.platform.common.cache.CacheService;
 import com.yuntao.platform.common.exception.BizException;
-import com.yuntao.platform.common.utils.BeanUtils;
-import com.yuntao.platform.common.utils.CollectUtils;
-import com.yuntao.platform.common.utils.DateUtil;
-import com.yuntao.platform.common.utils.ResponseHolder;
+import com.yuntao.platform.common.utils.*;
 import com.yuntao.platform.common.web.Pagination;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -25,19 +31,22 @@ import org.springframework.web.util.WebUtils;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 @Service("userService")
-public class UserServiceImpl extends AbstService implements UserService {
+public class UserServiceImpl extends AbstService implements UserService,AuthUserService {
 
     @Autowired
     private UserMapper userMapper;
 
     @Autowired
     private CacheService cacheService;
+
+    @Autowired
+    private AccountService accountService;
+
+    @Autowired
+    private OuterUserService outerUserService;
 
 
     @Override
@@ -76,41 +85,41 @@ public class UserServiceImpl extends AbstService implements UserService {
     }
 
     @Override
-    public Pagination<UserVo> selectMemberPage(UserQuery query) {
+    public Pagination<MemberVo> selectMemberPage(UserQuery query) {
         query.setType(UserType.member.getCode());
         Map<String, Object> queryMap = BeanUtils.beanToMap(query);
         long totalCount = userMapper.selectListCount(queryMap);
-        Pagination<UserVo> pageInfo = new Pagination<>(totalCount,
+        Pagination<MemberVo> pageInfo = new Pagination<>(totalCount,
                 query.getPageSize(), query.getPageNum());
         if (totalCount == 0) {
             return pageInfo;
         }
         queryMap.put("pagination", pageInfo);
         List<User> dataList = userMapper.selectList(queryMap);
-        List<UserVo> newDataList = new ArrayList<>(dataList.size());
+        List<MemberVo> newDataList = new ArrayList<>(dataList.size());
         pageInfo.setDataList(newDataList);
         for (User user : dataList) {
-            UserVo userVo = BeanUtils.beanCopy(user, UserVo.class);
-            if(userVo.getSex() != null){
-                UserSex userSex = UserSex.getByCode(userVo.getSex());
+            MemberVo memberVo = BeanUtils.beanCopy(user, MemberVo.class);
+            if(user.getSex() != null){
+                UserSex userSex = UserSex.getByCode(user.getSex());
                 if(userSex != null){
-                    userVo.setSexText(userSex.getDescription());
+                    memberVo.setSexText(userSex.getDescription());
                 }
             }
-
-//            if(userVo.getBindStatus() != null){
-//                UserBindStatus userBindStatus = UserBindStatus.getByCode(userVo.getBindStatus());
-//                if(userBindStatus != null){
-//                    userVo.setBindStatusText(userBindStatus.getDescription());
-//                }
-//            }
-//            if(userVo.getCourseStatus() != null){
-//                UserCourseStatus userCourseStatus = UserCourseStatus.getByCode(userVo.getCourseStatus());
-//                if (userCourseStatus != null) {
-//                    userVo.setCourseStatusText(userCourseStatus.getDescription());
-//                }
-//            }
-            newDataList.add(userVo);
+//
+            if(memberVo.getBindStatus() != null){
+                UserBindStatus userBindStatus = UserBindStatus.getByCode(user.getBindStatus());
+                if(userBindStatus != null){
+                    memberVo.setBindStatusText(userBindStatus.getDescription());
+                }
+            }
+            if(user.getCourseStatus() != null){
+                UserCourseStatus userCourseStatus = UserCourseStatus.getByCode(user.getCourseStatus());
+                if (userCourseStatus != null) {
+                    memberVo.setCourseStatusText(userCourseStatus.getDescription());
+                }
+            }
+            newDataList.add(memberVo);
         }
         return pageInfo;
     }
@@ -149,8 +158,8 @@ public class UserServiceImpl extends AbstService implements UserService {
         Cookie cookie = WebUtils.getCookie(request, "sid");
         if (cookie == null || StringUtils.isEmpty(cookie.getValue())) {
             String sid = cookie.getValue();
-            cacheService.remove("sid_" + sid);
-            cacheService.remove("login_user_" + userId);
+            cacheService.remove(CacheConstant.loginSid+"_" + sid);
+            cacheService.remove(CacheConstant.loginUser+"_" + userId);
         }
     }
 
@@ -171,25 +180,28 @@ public class UserServiceImpl extends AbstService implements UserService {
         }
         //获取userId
         String sid = cookie.getValue();
-        Object value = cacheService.get("sid_" + sid);
+        Object value = cacheService.get(CacheConstant.loginSid+"_" + sid);
         if (value == null) {
             return null;
         }
         Long userId = (Long) value;
         //从cache中获取
-        User user = (User) cacheService.get("login_user_" + userId);
+        User user = (User) cacheService.get(CacheConstant.loginUser+"_" + userId);
         if (user != null) {
             return user;
         }
         user = this.findById(userId);
         if (user != null) {
-            cacheService.set("login_user_" + userId, user, 60 * 60 * 24 * 3);
+            cacheService.set(CacheConstant.loginUser+"_" + userId, user, 60 * 60 * 24 * 3);
         }
         return user;
     }
 
-    @Override
-    public void setCurrentUser(User user) {
+    /**
+     * 仅仅修改当前用户操作
+     * @param user
+     */
+    private void setCurrentUser(User user) {
         //浏览器中cookie 缓存
         HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes())
                 .getRequest();
@@ -206,10 +218,20 @@ public class UserServiceImpl extends AbstService implements UserService {
             sid = cookie.getValue();
         }
         //set cache userId
-        cacheService.set("sid_" + sid, user.getId());
+        cacheService.set(CacheConstant.loginSid+"_" + sid, user.getId());
 
         //set cache user
-        cacheService.set("login_user_" + user.getId(), user);
+        cacheService.set(CacheConstant.loginUser+"_" + user.getId(), user);
+
+        //set msg cache user
+        if(user.getType() == UserType.member.getCode() || user.getType() == UserType.trainer.getCode() ||
+                user.getType() == UserType.bigScreen.getCode()){
+            cacheService.setGlobal(CacheConstant.loginSid+"_" + sid, user.getId());
+            cacheService.setGlobal(CacheConstant.loginUser+"_" + user.getId(), user);
+        }
+        //end
+
+
 
     }
 
@@ -222,6 +244,20 @@ public class UserServiceImpl extends AbstService implements UserService {
         userMapper.insert(user);
 
         if(user.getType() == UserType.member.getCode()){
+            //账户余额数据初始化
+            Account account = new Account();
+            account.setUserId(user.getId());
+            account.setStatus(1);  //正常
+            account.setAmount(0);
+            account.setCanUseAmount(0);
+            account.setLockAmount(0);
+            accountService.insert(account);
+            //end
+
+            user.setCourseStatus(UserCourseStatus.notJoin.getCode());
+            this.updateById(user);
+            //end
+
             //减脂数据初始化 TODO
         }
 
@@ -233,7 +269,10 @@ public class UserServiceImpl extends AbstService implements UserService {
     public int updateById(User user) {
         int result = userMapper.updateById(user);
         user = findById(user.getId());
-        setCurrentUser(user);
+        User currentUser = getCurrentUser();
+        if(currentUser.getId().longValue() == user.getId()){  //仅仅修改当前用户去掉缓存
+            setCurrentUser(user);
+        }
         return result;
     }
 
@@ -257,5 +296,62 @@ public class UserServiceImpl extends AbstService implements UserService {
         return dataList.get(0);
     }
 
+    @Override
+    public User selectByOuter(Integer type, String openId) {
+        OuterUserQuery outerUserQuery = new OuterUserQuery();
+        outerUserQuery.setBindType(type);
+        outerUserQuery.setOpenId(openId);
+        OuterUser outerUser = outerUserService.selectOne(outerUserQuery);
+        if (outerUser == null) {
+            return null;
+        }
+        Long userId = outerUser.getUserId();
+        return this.findById(userId);
+    }
 
+    @Override
+    public User saveOuterUser(Integer type, String openId, String nickname, String avatar) {
+        User user = new User();
+        user.setAccountNo(type + "_" + openId);
+        user.setAvatar(avatar);
+        user.setNickname(nickname);
+        user.setPwd(new Date().toString());
+        user.setMobile("1234567890");
+        user.setType(UserType.member.getCode());
+        user.setStatus(UserStatus.pass.getCode());
+        user.setLevel(1);
+        user.setBindStatus(UserBindStatus.notBind.getCode());
+        this.register(user);
+
+        //save outer user
+        OuterUser outerUser = new OuterUser();
+        outerUser.setOpenId(openId);
+        outerUser.setBindType(type);
+        outerUser.setAvatar(avatar);
+        outerUser.setNickname(nickname);
+        outerUser.setStatus(UserStatus.pass.getCode());
+        outerUser.setUserId(user.getId());
+        this.outerUserService.insert(outerUser);
+        return user;
+    }
+
+    @Override
+    public void deleteById(Long id) {
+        userMapper.deleteById(id);
+    }
+
+
+    @Override
+    public AuthUser getAuthUser() {
+        User user = getCurrentUser();
+        if(user != null){
+            AuthUser authUser = new AuthUser();
+            authUser.setUserId(user.getId());
+            authUser.setMobile(user.getMobile());
+            authUser.setUserName(user.getUserName());
+            authUser.setBindStatus(user.getBindStatus());
+            return authUser;
+        }
+        return null;
+    }
 }
