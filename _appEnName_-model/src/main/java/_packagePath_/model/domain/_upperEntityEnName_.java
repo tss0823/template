@@ -6,6 +6,7 @@
  */
 
 package ${packageName}.model.domain;
+import com.yuntao.platform.common.annotation.ModelFieldComment;
 
 import java.io.Serializable;
 import java.util.Date;
@@ -21,7 +22,7 @@ public class ${upperEntityEnName} implements Serializable {
     private static final long serialVersionUID = 1L;
     
     #foreach($item in $!bo.propList)
-/**  $!{item.cnName} * */
+@ModelFieldComment(value = "$!{item.cnName}")
     private $!{item.dataType} $!{item.enName};
         
     #end

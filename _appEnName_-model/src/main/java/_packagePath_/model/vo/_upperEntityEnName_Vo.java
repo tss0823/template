@@ -20,7 +20,8 @@ import ${packageName}.model.domain.${upperEntityEnName};
 public class ${upperEntityEnName}Vo extends ${upperEntityEnName} {
     
     private static final long serialVersionUID = 1L;
-    
 
+
+    public ${upperEntityEnName}Vo(){}
 
 }

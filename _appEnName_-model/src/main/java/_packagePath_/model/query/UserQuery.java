@@ -30,7 +30,7 @@ public class UserQuery extends BaseQuery {
     private java.util.Date gmtModify;
         
     /**  删除状态（0：已删除；1：未删除） * */
-    private java.lang.Boolean delState;
+    private java.lang.Boolean delState = true;
         
     /**  账号 * */
     private java.lang.String accountNo;
